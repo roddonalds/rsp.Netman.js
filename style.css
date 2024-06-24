@@ -1,0 +1,31 @@
+@import 'lib/css/vuetify.css';
+@import 'lib/css/mdi.css';
+
+html {
+    overflow: hidden;
+}
+
+.v-card__title {
+    font-size: 85%;
+}
+
+.v-btn {
+    height: 30px;
+}
+
+.v-btn__content {
+    font-size: 75%;
+}
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(90, 90, 90);
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+}

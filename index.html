@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Wi-Fi Networks</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="style.css" rel="stylesheet">
+</head>
+
+<body>
+    <div id="app">
+        <v-app>
+            <v-main>
+                <v-container fluid>
+                    <v-row justify="center">
+
+                        <v-col cols="12" md="12" class="pb-0" style="position: fixed; z-index: 9999;">
+
+                            <v-card class="wifi-interfaces" outlined>
+                            
+                                <v-card-text class="pa-2">
+                                    <v-row>
+                                        <v-col cols="2">
+                                            <v-icon size="large" style="height: 100px">mdi-expansion-card-variant</v-icon>
+                                        </v-col>
+                                        <v-col cols="11">
+                                            <v-select 
+                                                v-model="interfaceActive" 
+                                                :items="interfaces" 
+                                                item-text="name" 
+                                                item-value="name"
+                                                label="Interface"
+                                                density="compact" 
+                                                class="mt-2"></v-select>
+                                    </v-row>
+                                </v-card-text>
+                            
+                            </v-card>
+                        </v-col>
+
+                        
+                        <v-col cols="12" md="12" class="pb-0 pt-0" style="position: fixed; top: 130px; z-index: 999;">
+                            
+                            <v-card class="connected-network" outlined>
+                                
+                                <v-card-title class="pa-2">
+                                    <v-row>
+                                        <v-col cols="2" md="2">
+                                            <v-icon size="small" class="mr-3 ml-3">mdi-wifi-strength-4</v-icon>
+                                            Current
+                                        </v-col>
+                                        <v-col cols="9" md="9">
+                                            <v-progress-linear 
+                                                height="10"
+                                                width="100"
+                                                :value="connectionActive.quality" 
+                                                :color="getSignalColor(connectionActive.quality)" 
+                                                class="mt-2"></v-progress-linear>
+                                        </v-col>
+                                    </v-row>
+                                </v-card-title>
+
+                                <v-card-text>
+                                    <v-row>
+                                        <v-col cols="3" style="padding: 3px !important">
+                                            <strong>SSID:</strong> 
+                                            {{ connectionActive.ssid }}
+                                        </v-col>
+                                        
+                                        <v-col cols="3" style="padding: 3px !important">
+                                            <strong>Signal:</strong> 
+                                            {{ connectionActive.quality }}%
+                                        </v-col>
+                                        
+                                        <v-col cols="3" style="padding: 3px !important">
+                                            <strong>Security:</strong> 
+                                            {{ connectionActive.security || 'No security (Public)' }}
+                                        </v-col>
+                                        
+                                        <v-col cols="3" style="padding: 3px !important">
+                                            <strong>Interface</strong> 
+                                            {{ connectionActive.iface }}
+                                        </v-col>
+                                        
+                                        <v-col cols="3" style="padding: 3px !important">
+                                            <strong>Frequency</strong> 
+                                            {{ connectionActive.frequency }}
+                                        </v-col>
+                                        
+                                        <v-col cols="3" style="padding: 3px !important">
+                                            <strong>Channel</strong> 
+                                            {{ connectionActive.channel }}
+                                        </v-col>
+                                        
+                                        <v-col cols="4" style="padding: 3px !important">
+                                            <strong>Mac Address</strong> 
+                                            {{ connectionActive.mac }}
+                                        </v-col>
+                                        
+                                        <v-col style="padding: 3px !important">
+                                            <strong>Mode</strong> 
+                                            {{ connectionActive.mode}}
+                                        </v-col>
+                                    </v-row>
+                                </v-card-text>
+                                
+                                <v-card-actions>
+                                    <v-row>
+                                        <v-col cols="4">
+                                            <v-btn :block="true" @click="disconnectFromWifi">
+                                                <v-icon size="small" class="mr-2">mdi-cogs</v-icon>
+                                                Edit
+                                            </v-btn>
+                                        </v-col>
+                                        <v-col cols="4">
+                                            <v-btn :block="true" @click="connectToWifi(connectionActive)">
+                                                <v-icon size="small" class="mr-2">mdi-wifi-refresh</v-icon>
+                                                Reconnect
+                                            </v-btn>
+                                        </v-col>
+                                        <v-col cols="4">
+                                            <v-btn :block="true" @click="disconnectFromWifi">
+                                                <v-icon size="small" class="mr-2">mdi-wifi-off</v-icon>
+                                                Disconnect
+                                            </v-btn>
+                                    </v-row>
+                                </v-card-actions>
+                            </v-card>
+
+                            
+                        </v-col>
+
+                        <v-col cols="12" md="12" style="margin-top: 274px !important;">
+
+                            <v-card v-if="networks.length > 0" outlined>
+                                <v-list style=" overflow-y: scroll !important; height: calc(100vh - 297px);">
+                                    <v-list-item 
+                                        v-for="(network, index) in networks" 
+                                        :key="`${network.ssid}-${index}`">
+                                    
+                                        <v-list-item-content>
+                                            <v-list-item-title>
+                                                <v-icon class="mr-2">mdi-wifi</v-icon>
+                                                {{ network.ssid }}
+                                            </v-list-item-title>
+                                            <v-list-item-subtitle>
+                                                Signal Strength: {{ network.quality }}%
+                                                <v-progress-linear :value="network.quality" :color="getSignalColor(network.quality)" height="10"
+                                                    class="mt-2"></v-progress-linear>
+                                            </v-list-item-subtitle>
+                                            <v-list-item-subtitle>
+                                                Security: {{ network.security }}
+                                            </v-list-item-subtitle>
+                                        </v-list-item-content>
+
+                                        <v-list-item-action>
+                                            <v-btn color="primary" @click="connectToWifi(network)">Connect</v-btn>
+                                            <v-btn color="primary" @click="disconnectFromWifi(network)">Disconnect</v-btn>
+                                        </v-list-item-action>
+                                    
+                                    </v-list-item>
+                                </v-list>
+                            </v-card>
+
+                            <v-card v-else>
+                                <v-card-title>No Wi-Fi Networks Available</v-card-title>
+                            </v-card>
+
+
+                        </v-col>
+                    </v-row>
+                </v-container>
+            </v-main>
+        </v-app>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.0/dist/vuetify.js"></script>
+    <script>
+
+        const { ipcRenderer, ipcMain } = require('electron');
+
+        const env = process.env,
+              nodeEnv = env.NODE_ENV || 'development';
+
+        Vue.config.devtools = nodeEnv === 'development' ? true : false;
+
+        new Vue({
+            el: '#app',
+            vuetify: new Vuetify({
+                theme: { dark: TransformStreamDefaultController }
+            }),
+            data: {
+                connectionActive: {},
+                interfaceActive: {},
+                interfaces: [],
+                connections: [],
+                networks: []
+            },
+            mounted() {
+
+
+                ipcRenderer.on('wifi-interfaces', (event, interfaces) => {
+                    console.log('interfaces', interfaces);
+                    this.interfaces = interfaces.list;
+                    this.interfaceActive = interfaces.active;
+                });
+
+                ipcRenderer.on('wifi-networks', (event, networks) => {
+                    console.log('Networks', networks);
+                    this.networks = networks.filter(network => !network.connected);
+                });
+
+                ipcRenderer.on('wifi-connections', (event, connections) => {
+                    console.log('Connections', connections);
+                    this.connections = connections
+                    this.connectionActive = connections[0];
+                });
+            },
+
+            methods: {
+
+                getSignalColor(signal) {
+                    
+                    if (signal > 75) return 'green';
+                    if (signal > 50) return 'yellow';
+                    if (signal > 25) return 'orange';
+
+                    return 'red';
+                },
+
+                connectToWifi(network) {
+                    ipcRenderer.send('wifi-action', 'connect', network);
+                },
+
+                disconnectFromWifi() {
+                    ipcRenderer.send('wifi-action', 'disconnect', this.connectionActive);
+                }
+            },
+
+            watch: {
+                connectionActive(current) {
+                    console.log('Current network changed', current);
+                },
+                networks(current) {
+                    console.log('Network changed', current);
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

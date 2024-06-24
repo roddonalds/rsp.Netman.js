@@ -1,0 +1,35 @@
+qr code wifi
+ver senha wifi
+wifiws salvos
+ajeitar terminal ohmybash
+brawer right
+autoreloader electron
+OK - offlinizar libs CDN
+fazer drawyer layout no index.html
+sulocao para gerencamento de outros tipos de rede
+
+
+1. find out the current/prmary interface data
+    
+    para iniciar corretamente
+    
+    wifi.init({
+        iface: null // network interface, choose a random wifi interface if set to null
+    }); 
+
+get all Intefaces on a object
+
+    var ifconfig = require('wireless-tools/ifconfig');
+
+    ifconfig.status(function(err, status) {
+        console.log(status);
+    });
+
+find out the current/prmary interface data
+
+
+prmeiro get as wlan if
+
+    load all wlan infos on a array
+
+    initializes wifi,init
