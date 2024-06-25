@@ -1,11 +1,10 @@
+global.activeWifiInterface = null;
+
 const { app, BrowserWindow, Tray, Menu, ipcMain, Notification, dialog } = require('electron');
 const prompt = require('electron-prompt')
 const path = require('path');
 const shell = require('shelljs');
 const wifi = require('node-wifi');
-const os = require('os');
-const { execSync } = require('child_process');
-
 
 const env = process.env,
       nodeEnv = env.NODE_ENV || 'development';
@@ -31,24 +30,6 @@ if (nodeEnv === 'development') {
     mainWindowSkel.height = 1000;
 }
 
-
-// IPC listener for handling connect/disconnect actions
-ipcMain.on('wifi-action', (event, action, network) => {
-    switch (action) {
-        case 'connect':
-            connectToWifi(network);
-            break;
-        case 'disconnect':
-            disconnectFromWifi(network);
-            break;
-        case 'settings':
-            setupWifiConnection(network);
-        default:
-            console.warn('Unknown action:', action);
-            break;
-    }
-});
-
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
         app.quit();
@@ -64,7 +45,7 @@ app.on('activate', () => {
 app.on('ready', () => {
 
     mainWindow = new BrowserWindow({
-        width: 800,
+        width: 963,
         height: 600,
         ...mainWindowSkel,
         webPreferences: {
@@ -75,6 +56,7 @@ app.on('ready', () => {
     // Center the window
     mainWindow.center();
 
+    // Load the index.html of the app
     mainWindow.loadFile('index.html');
 
     // Open devtools automatically
@@ -88,9 +70,7 @@ app.on('ready', () => {
     });
 
     mainWindow.webContents.on('did-finish-load', () => {
-        loadWifiInterfaces();
-        loadWifiNetworks();
-        loadActiveConnections();
+        loadStack()
     });
 
     // Set up tray icon
@@ -118,16 +98,55 @@ app.on('ready', () => {
     ]));
 });
 
-function loadWifiNetworks() {
+// IPC listener for handling connect/disconnect actions
+ipcMain.on('wifi-action', (event, action, payload) => {
+    switch (action) {
+        case 'connect':
+            connectToWifi(payload);
+            break;
+        case 'disconnect':
+            disconnectFromWifi(payload);
+            break;
+        case 'setup':
+            setupWifiConnection(payload);
+        case 'load': 
+            loadStack(payload)
+        default:
+            console.warn('Unknown action:', action);
+            break;
+    }
+});
+
+function loadStack(payload) {
+
+    if (payload) {
+        global.activeWifiInterface = payload;
+    }
+
+    loadWifiInterfaces(() => {
+        console.log('Wifi interfaces were loaded')
+        loadWifiNetworks(() => {
+            console.log('Wifi networks were loaded')
+            loadActiveConnections(() => {
+                console.log('Wifi active connections were loaded')
+                console.log('activeWifiInterface', global.activeWifiInterface)
+            });
+        });
+    });
+}
+
+function loadWifiNetworks(callback) {
     wifi.scan().then(networks => {
         mainWindow.webContents.send('wifi-networks', networks);
+        callback()
     }).catch(err => {
         console.error('Failted to scan Wifi Networks:');
         console.error(err);
     });
 }
 
-function loadActiveConnections() {
+function loadActiveConnections(callback) {
+    
     wifi.getCurrentConnections((error, currentConnections) => {
         if (error) {
             console.log(error);
@@ -135,61 +154,32 @@ function loadActiveConnections() {
             mainWindow.webContents.send('wifi-connections', currentConnections);
         }
     });
+
+    callback()
 }
 
-function loadWifiInterfaces() {
-    
-    const interfaces = os.networkInterfaces();
-    
-    let wifiInterfaces = [];
+function loadWifiInterfaces (callback) {
 
-    Object.keys(interfaces).forEach((iface) => {
-        interfaces[iface].forEach((details) => {
-            if (details.family === 'IPv4' && !details.internal && /wlan|wifi|wl/.test(iface)) {
-                wifiInterfaces.push({
-                    name: iface,
-                    mac: details.mac,
-                    address: details.address,
-                    netmask: details.netmask,
-                });
-            }
+    require('./api/getInterfaces.js')(wifiInterfaces => {
+
+        const activeWifif = global.activeWifiInterface || wifiInterfaces.primaryInterface 
+
+        wifi.init({
+            iface: activeWifif.name
         });
-    });
+             
+        mainWindow.webContents.send('wifi-interfaces', {
+            list: wifiInterfaces.list,
+            active: activeWifif
+        });
 
-    wifi.init({
-        iface: getCurrentInternetInterface() // network interface, choose a random wifi interface if set to null
-    });
-    
-    mainWindow.webContents.send('wifi-interfaces', {
-        list: wifiInterfaces,
-        active: getCurrentInternetInterface()
-    });
-}
+        callback()
 
-function getCurrentInternetInterface() {
-
-    const interfaces = os.networkInterfaces();
-    
-    let defaultInterface = null;
-
-    try {
-        const route = execSync('ip route get 8.8.8.8').toString();
-        const match = route.match(/dev (\w+)/);
-
-        if (match) {
-            const interfaceName = match[1];
-            if (interfaces[interfaceName]) {
-                defaultInterface = interfaceName;
-            }
-        }
-    } catch (error) {
-        console.error('Error executing command:', error);
-    }
-
-    return defaultInterface;
+    }, 'wifi')
 }
 
 function setupWifiConnection(network) {
+
     // Placeholder: Implement logic to open the Wi-Fi settings for the selected network
     // For example, using shell commands or an Electron Wi-Fi library
     console.log('Opening settings for:', network.ssid);
@@ -243,20 +233,19 @@ async function connectToWifi(network) {
                 icon: path.join(__dirname, 'icon.png')
             }).show();
         }
-        // Reload the Wi-Fi networks list after attempting to connect
-        loadWifiNetworks();
 
-        // load the active connections
-        loadActiveConnections();
+        loadStack()
+
     });
 }
 
 function disconnectFromWifi(network) {
+
     // Placeholder: Implement logic to disconnect from the current Wi-Fi network
     // For example, using shell commands or an Electron Wi-Fi library
-    console.log('Disconnecting from:', network.ssid);
+    console.log(`Disconnecting ${network.iface} from:`, network.ssid);
 
-    shell.exec(`nmcli device disconnect '${network.device}'`, (code, stdout, stderr) => {
+    shell.exec(`nmcli device disconnect '${network.iface}'`, (code, stdout, stderr) => {
         if (code !== 0) {
             console.error('Error disconnecting Wi-Fi:', stderr);
             // Notify the user of the error
@@ -274,8 +263,9 @@ function disconnectFromWifi(network) {
                 icon: path.join(__dirname, 'icon.png')
             }).show();
         }
-        // Reload the Wi-Fi networks list after attempting to disconnect
-        loadWifiNetworks();
+
+        loadStack()
+
     });
 }
 
@@ -292,7 +282,6 @@ async function askWifiPassword (network) {
     });
 }
 
-// Function to get the WiFi password of the current connection
 function getWifiPassword() {
 
     const { execSync } = require('child_process');
