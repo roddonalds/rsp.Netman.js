@@ -14,7 +14,9 @@
         "electron-prompt": "^1.7.0",
         "network": "^0.7.0",
         "network-config": "^3.0.0",
+        "network-manager": "^1.0.2",
         "node-wifi": "^2.0.16",
+        "qrcode": "^1.5.3",
         "shelljs": "^0.8.5",
         "wireless-tools": "^0.19.0"
     },

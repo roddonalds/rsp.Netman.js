@@ -166,65 +166,80 @@
 
                             <v-card class="network-list" outlined v-if="wifiNetworks.length > 0">
 
+                                <v-toolbar height="6" color="primary" title="User Profile"></v-toolbar>
 
-                                <v-list>
+                                <v-row>
+
+                                    <v-col cols="2">
+                                        <v-tabs v-model="currentTab" color="primary" vertical>
+                                            <v-tab v-for="(tab, index) in tabs" :key="index" :value="tab.value" style="text-align: left !important; justify-content: left; font-size: x-small;" prepend-icon="mdi-account">
+                                                {{ tab.text }}
+                                            </v-tab>
+                                        </v-tabs>
+                                    </v-col>
+
+                                    <v-col cols="10" class="pl-0">
+                                        <v-card-text class="pl-0">
+                                            <v-list>    
+                                                
+                                                <v-list-item 
+                                                    class="ma-2 mr-3 ml-3 mb-3 wifi-list-item"
+                                                    v-for="(network, index) in wifiNetworks"
+                                                    :key="`${network.mac}-${index}`" 
+                                                    v-show="network.ssid">
+
+                                                    <v-row>
+
+                                                        <v-col cols="4" style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                                                            <v-icon size="small" class="mr-2">mdi-wifi-strength-4</v-icon>
+                                                            <div style="display: inline-block; margin-right: 10px;">{{ network.ssid }}</div>
+                                                            <v-progress-linear 
+                                                                height="10" 
+                                                                style="display: inline-block;"
+                                                                :value="network.quality"
+                                                                :color="getSignalColor(network.quality)" 
+                                                                class="mt-2"></v-progress-linear>
+                                                        </v-col>
+
+                                                        <v-col cols="5"
+                                                                 style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap">
+                                                            <strong class="ml-2">Channel: </strong>
+                                                            {{ network.channel }}
+                                                            <strong class="ml-2">Frequency: </strong>
+                                                            {{ network.frequency }}
+                                                            <v-icon class="ml-2" style="font-size: smaller;">mdi-lock</v-icon>
+                                                            {{ network.security || '(Public)' }}
+                                                        </v-col>
+                                                        
+                                                        <v-col cols="3" 
+                                                                style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                                                                <v-icon class="ml-2" style="font-size: smaller;">mdi-ethernet</v-icon>
+                                                                {{ network.mac }}
+                                                        </v-col>
+                                                        
+                                                    </v-row>
+
+                                                    <v-list-item-action>
+                                                        <v-row>
+                                                            <v-col class="pr-0">
+                                                                <v-btn style="padding: 3px; min-width: 36px !important;" height="36" @click="connectToWifi(network)">
+                                                                    <v-icon size="small">mdi-connection</v-icon>
+                                                                </v-btn>
+                                                            </v-col>
+                                                            <v-col>
+                                                                <v-btn style="padding: 3px; min-width: 36px !important;" height="36" @click="viewWifiNetwork(network)">
+                                                                    <v-icon size="small">mdi-cogs</v-icon>
+                                                                </v-btn>
+                                                            </v-col>
+                                                        </v-row>
+                                                    </v-list-item-action>
+                                                </v-list-item>
+
+                                            </v-list>
+                                        </v-card-text>
+                                    </v-col>
                                     
-                                    <v-list-item 
-                                        class="ma-2 mr-3 ml-3 mb-3 wifi-list-item"
-                                        v-for="(network, index) in wifiNetworks"
-                                        :key="`${network.mac}-${index}`"
-                                        v-show="network.ssid">
-                                    
-                                        <v-list-item-content>
-                                                <v-row>
-                                                    <v-col cols="2" style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap">
-                                                        <v-icon class="mr-2">mdi-wifi</v-icon>
-                                                        <b>{{ network.ssid }}</b>
-                                                    </v-col>
-                                                    <v-col cols="4">
-                                                        <v-progress-linear 
-                                                            :value="network.quality" 
-                                                            :color="getSignalColor(network.quality)" 
-                                                            height="10"></v-progress-linear>
-                                                    </v-col>
-                                                    <v-col cols="6">
-                                                       <v-icon>mdi-antenna</v-icon> {{ network.channel }}
-                                                        <span style="width: 7px; display: inline-block"></span>
-
-                                                        <v-icon>mdi-access-point</v-icon> {{ network.frequency }}
-                                                        <span style="width: 7px; display: inline-block"></span>
-
-                                                        <v-icon>mdi-lock</v-icon> {{ network.security || '(Public)' }}
-                                                        <span style="width: 7px; display: inline-block"></span>
-                                                        <v-icon>mdi-pound-box-outline</v-icon> {{ network.mac }}
-                                                    </v-col>
-                                                </v-row>
-
-                                        </v-list-item-content>
-
-                                        <v-list-item-action>
-                                            <v-row>
-                                                <v-col class="pr-0">
-                                                    <v-btn style="padding: 3px; min-width: 36px !important;" height="36" @click="connectToWifi(network)">
-                                                        <v-icon size="small">mdi-connection</v-icon>
-                                                    </v-btn>
-                                                </v-col>
-
-                                                <v-col>
-                                                    <v-btn style="padding: 3px; min-width: 36px !important;" height="36" @click="viewWifiNetwork(network)">
-                                                        <v-icon size="small">mdi-cogs</v-icon>
-                                                    </v-btn>
-                                                </v-col>
-                                            </v-row>
-                                        </v-list-item-action>
-                                    
-                                    </v-list-item>
-
-
-                                </v-list>
-
-
-                                
+                                </v-row>
                             </v-card>
 
                             <v-card class="network-list pa-12" outlined v-else>
@@ -272,11 +287,18 @@
             }),
 
             data: {
+                tabs: [
+                    { text: 'Redes', value: 'Redes' },  
+                    { text: 'Conexões', value: 'knownWifis' },
+                    { text: 'Configurações', value: 'settings' }
+                ],
+                currentTab: 'bashboard',
                 wifiNetworkActive: {},
                 wifiConnectionActive: {},
                 wifiInterfaceActive: {},
                 wifiInterfaces: [],
                 wifiConnections: [],
+                wifiNetworksKnown: [],
                 wifiNetworks: []
             },
 
@@ -319,6 +341,11 @@
                     this.wifiNetworkActive = wifiNetworks.find(network => network.connected);
                     console.log('this.wifiNetworks', this.wifiNetworks);
                     console.log('this.wifiNetworkActive', this.wifiNetworkActive)
+                });
+
+                ipcRenderer.on('wifi-networks-known', (event, wifiNetworksKnown) => {
+                    this.wifiNetworksKnown = wifiNetworksKnown;
+                    console.log('this.wifiNetworksKnown', this.wifiNetworksKnown)
                 });
             },
 

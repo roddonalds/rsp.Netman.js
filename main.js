@@ -126,11 +126,13 @@ function loadStack(payload) {
     loadWifiInterfaces(() => {
         console.log('Wifi interfaces were loaded')
         loadWifiNetworks(() => {
-            console.log('Wifi networks were loaded')
-            loadActiveConnections(() => {
-                console.log('Wifi active connections were loaded')
-                console.log('activeWifiInterface', global.activeWifiInterface)
-            });
+            loadKnownWifis(() => {
+                console.log('Wifi known networks were loaded')  
+                loadActiveConnections(() => { 
+                    console.log('Wifi active connections were loaded')
+                    console.log('activeWifiInterface', global.activeWifiInterface)
+                })
+            })
         });
     });
 }
@@ -142,6 +144,14 @@ function loadWifiNetworks(callback) {
     }).catch(err => {
         console.error('Failted to scan Wifi Networks:');
         console.error(err);
+    });
+}
+
+async function loadKnownWifis(callback) {
+    require('./api/getKnownWifiNetworks.js')(knownWifis => {  
+        mainWindow.webContents.send('wifi-networks-known', knownWifis);
+        console.log('knownWifis', knownWifis)
+        callback()
     });
 }
 
@@ -280,23 +290,4 @@ async function askWifiPassword (network) {
             type: 'password'
         }
     });
-}
-
-function getWifiPassword() {
-
-    const { execSync } = require('child_process');
-
-    // Get the connection UUID of the active WiFi connection
-    const connectionUuid = execSync('nmcli -t -f UUID,TYPE con show --active | grep wifi | cut -d ":" -f 2').toString().trim();
-
-    console.log('connectionUuid:', connectionUuid);
-
-    if (connectionUuid) {
-        const psk = execSync(`sudo nmcli -s -g 802-11-wireless-security.psk connection show ${connectionUuid}`, { stdio: 'pipe' }).toString().trim();
-        console.log('WiFi password:', psk);
-        return psk;
-    } else {
-        console.log('No active WiFi connection found.');
-    }
-
 }
