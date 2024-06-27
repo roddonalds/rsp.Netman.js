@@ -4,10 +4,30 @@
     "description": "",
     "main": "main.js",
     "scripts": {
+        "gitup": "git add . && git commit -m 'update' && git push",
         "start": "NODE_ENV=production electron . --remote-allow-origins=*",
         "start:dev": "NODE_ENV=development electron . --watch --remote-allow-origins=* ",
-        "gitup": "git add . && git commit -m 'update' && git push"
+        "dist": "electron-builder --linux deb --x64",
+        "install": "sudo apt remove rsp.redman -y --purge; sudo dpkg -i dist/rsp.Wifiman.0.0_amd64.deb || true",
+        "test:getInterfaces": "node ./test/getInterfaces.js",
+        "test:getKnownWifis": "node ./test/getKnownWifis.js"
     },
+
+    "build": {
+        "appId": "io.ropsoft.rsp.wifiman",
+        "productName": "rsp.wifiman",
+        "directories": {
+        "output": "dist"
+        },
+        "linux": {
+        "icon": "./icon.png",
+        "target": [
+            "deb"
+        ],
+        "category": "Settings"
+        }
+    },
+
     "dependencies": {
         "electron": "^31.0.2",
         "electron-devtools-installer": "^3.2.0",

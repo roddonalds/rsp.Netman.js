@@ -1,6 +1,7 @@
 global.activeWifiInterface = null;
+global.isOnline = true;
 
-const { app, BrowserWindow, Tray, Menu, ipcMain, Notification, dialog } = require('electron');
+const { app, BrowserWindow, Tray, Menu, ipcMain, Notification } = require('electron');
 const prompt = require('electron-prompt')
 const path = require('path');
 const shell = require('shelljs');
@@ -17,6 +18,7 @@ let mainWindowSkel = {
     minimizable: true,
     hidden: false,
     show: true,
+    zoomFactor: 0.7,
     icon: path.join(__dirname, 'icon.png')
 };
 
@@ -30,11 +32,9 @@ if (nodeEnv === 'development') {
     mainWindowSkel.height = 1000;
 }
 
-app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') {
-        app.quit();
-    }
-});
+app.setLoginItemSettings({
+    openAtLogin: true    
+})
 
 app.on('activate', () => {
     if (mainWindow === null) {
@@ -45,11 +45,12 @@ app.on('activate', () => {
 app.on('ready', () => {
 
     mainWindow = new BrowserWindow({
-        width: 963,
-        height: 600,
         ...mainWindowSkel,
+        width: 880,
+        height: 600,
+        resizable: false,
         webPreferences: {
-            ...mainWebOptionsSkel    
+            ...mainWebOptionsSkel
         }
     });
 
@@ -73,48 +74,39 @@ app.on('ready', () => {
         loadStack()
     });
 
-    // Set up tray icon
-    tray = new Tray(path.join(__dirname, 'icon.png'));
+    createTray();
+    initWifiNetworksReloader();
 
-    tray.setToolTip('Wi-Fi Network List');
-
-    tray.setContextMenu(Menu.buildFromTemplate([
-        
-        {
-            label: 'Show App',
-            click: () => {
-                mainWindow.show();
-            },
-        },
-
-        {
-            label: 'Quit',
-            click: () => {
-                app.isQuiting = true;
-                app.quit();
-            },
-        },
-
-    ]));
 });
 
-// IPC listener for handling connect/disconnect actions
-ipcMain.on('wifi-action', (event, action, payload) => {
-    switch (action) {
-        case 'connect':
-            connectToWifi(payload);
-            break;
-        case 'disconnect':
-            disconnectFromWifi(payload);
-            break;
-        case 'setup':
-            setupWifiConnection(payload);
-        case 'load': 
-            loadStack(payload)
-        default:
-            console.warn('Unknown action:', action);
-            break;
+ipcMain.on('app-action', (event, action, payload) => {
+    if (action === 'hide') {
+        mainWindow.hide();
     }
+})
+
+ipcMain.on('wifi-action', (event, action, payload) => {
+
+    if (action === 'load') {
+    
+        loadStack(payload)
+    
+    } else if (action === 'setup') {
+    
+        setupWifiConnection(payload)
+    
+    } else if (action === 'connect') {
+    
+        connectToWifi(payload)
+    
+    } else if (action === 'disconnect') {
+    
+        disconnectFromWifi(payload)
+    
+    } else {
+        console.warn('Unknown action:', action);
+    }
+
 });
 
 function loadStack(payload) {
@@ -124,23 +116,50 @@ function loadStack(payload) {
     }
 
     loadWifiInterfaces(() => {
+
         console.log('Wifi interfaces were loaded')
-        loadWifiNetworks(() => {
-            loadKnownWifis(() => {
-                console.log('Wifi known networks were loaded')  
+        
+        loadKnownWifis(knownWifis => {
+        
+            console.log('Wifi known networks were loaded')
+
+            loadWifiNetworks(knownWifis, () => {
+        
+                console.log('Wifi disposable networks were loaded')  
+        
                 loadActiveConnections(() => { 
+        
                     console.log('Wifi active connections were loaded')
-                    console.log('activeWifiInterface', global.activeWifiInterface)
+        
                 })
             })
         });
     });
 }
 
-function loadWifiNetworks(callback) {
+function loadWifiNetworks(knownWifis, callback) {
+
     wifi.scan().then(networks => {
+        
+        networks = networks.map(network => {
+            
+            const knownNetwork = knownWifis.find(known => known.ssid === network.ssid);
+            
+            network.known = !!knownNetwork;
+
+            if (network.known) {
+                network.qrcode = knownNetwork.qrcode;
+                network.password = knownNetwork.password;
+            }
+
+            return network;
+
+        });
+
         mainWindow.webContents.send('wifi-networks', networks);
+
         callback()
+
     }).catch(err => {
         console.error('Failted to scan Wifi Networks:');
         console.error(err);
@@ -150,37 +169,38 @@ function loadWifiNetworks(callback) {
 async function loadKnownWifis(callback) {
     require('./api/getKnownWifiNetworks.js')(knownWifis => {  
         mainWindow.webContents.send('wifi-networks-known', knownWifis);
-        console.log('knownWifis', knownWifis)
-        callback()
+        callback(knownWifis)
     });
 }
 
 function loadActiveConnections(callback) {
     
     wifi.getCurrentConnections((error, currentConnections) => {
+        
         if (error) {
             console.log(error);
         } else {
             mainWindow.webContents.send('wifi-connections', currentConnections);
         }
-    });
 
-    callback()
+        callback();
+
+    });
 }
 
 function loadWifiInterfaces (callback) {
 
     require('./api/getInterfaces.js')(wifiInterfaces => {
 
-        const activeWifif = global.activeWifiInterface || wifiInterfaces.primaryInterface 
+        const activeWifi = global.activeWifiInterface || wifiInterfaces.primaryInterface 
 
         wifi.init({
-            iface: activeWifif.name
+            iface: activeWifi.name
         });
              
         mainWindow.webContents.send('wifi-interfaces', {
             list: wifiInterfaces.list,
-            active: activeWifif
+            active: activeWifi
         });
 
         callback()
@@ -195,17 +215,21 @@ function setupWifiConnection(network) {
     console.log('Opening settings for:', network.ssid);
 
     shell.exec(`nm-connection-editor`, (code, stdout, stderr) => {
+
         if (code !== 0) {
+
             console.error('Error opening Wi-Fi settings:', stderr);
-            // Notify the user of the error
+
             new Notification({
                 title: 'Settings Error',
                 body: `Failed to open settings for ${network.ssid}.`,
                 icon: path.join(__dirname, 'icon.png')
             }).show();
+
         } else {
+
             console.log('Opened settings successfully for:', network.ssid);
-            // Optionally, notify the user of successful opening
+
             new Notification({
                 title: 'Wi-Fi Settings',
                 body: `Opened settings for ${network.ssid}.`,
@@ -221,8 +245,14 @@ async function connectToWifi(network) {
     // For example, using shell commands or an Electron Wi-Fi library
     console.log('Connecting to:', network.ssid);
     
-    const password = await askWifiPassword(network);
+    let password;
 
+    if (network.known) {
+        password = network.password;
+    } else {
+        password = await askWifiPassword(network);
+    }
+    
     console.log('Password', password);
     
     shell.exec(`nmcli device wifi connect '${network.ssid}' password '${password}'`, (code, stdout, stderr) => {
@@ -279,7 +309,7 @@ function disconnectFromWifi(network) {
     });
 }
 
-async function askWifiPassword (network) {
+async function askWifiPassword () {
 
     return await prompt(mainWindow, {
         type: 'input',
@@ -289,5 +319,34 @@ async function askWifiPassword (network) {
             style: `background-color: rgba(0,0,0,1)`,
             type: 'password'
         }
+    });
+}
+
+function initWifiNetworksReloader () {
+    
+    setInterval(() => {
+        loadKnownWifis(knownWifis => {
+            loadWifiNetworks(knownWifis, () => {
+                console.log('Wifi disposable networks were loaded')       
+            })
+        })
+
+    }, 1000 *  10);
+}
+
+function createTray() {
+    
+    tray = new Tray(path.join(__dirname, 'icon.png'));
+    
+    const contextMenu = Menu.buildFromTemplate([
+        { label: 'Show', click: () => { mainWindow.show(); } },
+        { label: 'Hide', click: () => { mainWindow.hide(); } }
+    ]);
+
+    tray.setToolTip('rsp.Wifiman - Wifi Connection Manager');
+    tray.setContextMenu(contextMenu);
+
+    tray.on('click', () => {
+        mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show();
     });
 }

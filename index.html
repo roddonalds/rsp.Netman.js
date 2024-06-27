@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-    <title>Wi-Fi Networks</title>
+    <title>rsp.Wifiman - Wifi Networking Manager</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="style.css" rel="stylesheet">
@@ -12,18 +12,26 @@
     <div id="app">
         <v-app>
             <v-main>
+
+
+                <!-- APPS REAL CONTAINER -->
                 <v-container fluid>
                     <v-row justify="center">
 
-                        <v-col cols="12" md="12" class="pb-0">
+
+
+                        <!-- SECSAO DE SELECAO DE INTERFACES WIFI -->
+                        <v-col cols="12" class="pb-0">
 
                             <v-card class="wifi-interfaces" outlined>
                             
                                 <v-card-text class="pa-2">
                                     <v-row>
+                                        
                                         <v-col cols="2" style="text-align: center;">
                                             <v-icon style="font-size: 430%">mdi-expansion-card-variant</v-icon>
                                         </v-col>
+                                        
                                         <v-col cols="4">
                                             <v-select 
                                                 @input="interfaceSwitch"
@@ -34,27 +42,32 @@
                                                 label="Interface"
                                                 density="compact"></v-select>
                                         </v-col>
+                                        
                                         <v-col cols="3">
+
                                             <v-text-field 
                                                 name="status" 
                                                 readonly="readonly"
                                                 variant="underlined" 
                                                 :prepend-icon="wifiInterfaceActiveIcon"
                                                 :value="wifiInterfaceActive.up ? 'Ativo' : 'Inativo'"></v-text-field>
+                                        
                                         </v-col>
+                                        
                                         <v-col cols="3" style="align-content: center;">
-                                            <v-btn height="45" v-if="wifiInterfaceActive.up">
-                                                <v-icon>mdi-refresh</v-icon>
-                                            </v-btn>
-                                            <v-btn height="45" v-else>
-                                                <v-icon>mdi-rocket</v-icon>
-                                            </v-btn>
-                                            <v-btn height="45">
+                                        
+                                            <v-btn style="margin-top: -22px;" height="45" v-if="wifiInterfaceActive.up">
                                                 <v-icon>mdi-stop-circle-outline</v-icon>
                                             </v-btn>
-                                            <v-btn height="45">
-                                                <v-icon>mdi-cogs</v-icon>
+                                        
+                                            <v-btn style="margin-top: -22px;" height="45" v-else>
+                                                <v-icon>mdi-rocket</v-icon>
                                             </v-btn>
+
+                                            <small style="display: inline-block; position: relative; top: -7px; margin-left: 15px; margin-top: 1px !important;">
+                                                <v-checkbox label="Default" @input="setDefaultInterface"/>
+                                            </small>
+
                                         </v-col>
                                     </v-row>
                                 </v-card-text>
@@ -63,28 +76,28 @@
                         </v-col>
 
                         
-                        <v-col cols="12" class="pb-0 pt-0 mt-2 mb-0">
+
+
+                        <!-- SECSAO DE CONEXAO WIFI ATIVA -->
+                        <v-col cols="12" class="pt-0 mt-2">
                             
-                            <v-card class="connected-network pa-1 pb-0" 
+                            <v-card class="connected-network pa-1"
                                     outlined
                                     v-if="wifiConnectionActive.ssid">
                                 
-                                <v-card-text>
-
-                                    <v-row>
-                                        
-                                        <v-col cols="10">
+                                <v-card-text class="pt-0">
 
                                             <v-icon size="small" class="mr-3 ml-3">mdi-wifi-strength-4</v-icon>{{ wifiConnectionActive.ssid }}
                                                                                 
-                                            <span class="ml-4" style="display: inline-block; width: 75%">
-                                                <v-progress-linear height="10" 
+                                            <span class="ml-4" style="display: inline-block; width: 85%">
+                                                <v-progress-linear 
+                                                        height="10" 
                                                         :value="wifiConnectionActive.quality"
                                                         :color="getSignalColor(wifiConnectionActive.quality)" 
                                                         class="mt-2"></v-progress-linear>
                                             </span>
 
-                                            <div class="mt-5">
+                                            <div class="mt-5" style="font-size: 107% !important;">
                                                 <span>
                                                     <strong>Channel: </strong>:
                                                     {{ wifiConnectionActive.channel }}
@@ -97,58 +110,60 @@
                                                     <strong>Security</strong>:
                                                     {{ wifiConnectionActive.security || '(Public)' }}
                                                 </span>
-                                                <span class="ml-4">
-                                                    <strong>Mac</strong>:
-                                                    {{ wifiConnectionActive.mac }}
-                                                </span>
-                                                <span class="ml-4">
-                                                    <b>IPv4</b>:
+                                                <a class="ml-4" @click="cp(wifiConnectionActive.mac)">
+                                                    <strong style="color: whitesmoke;">
+                                                        <v-icon size="large">mdi-barcode</v-icon>
+                                                    </strong>                                              
+                                                    {{ wifiInterfaceActive.mac }}
+                                                </a>
+                                                <a class="ml-4" @click="cp(wifiInterfaceActive.ip)">
+                                                    <strong style="color: whitesmoke;">
+                                                        <v-icon size="large">mdi-ip</v-icon>
+                                                    </strong>
                                                     {{ wifiInterfaceActive.ip || "0.0.0.0" }}
-                                                </span>
+                                                </a>
+                                                <a class="ml-4" @click="cp(connectionPublicIP)">
+                                                    <strong style="color: whitesmoke;">
+                                                        <v-icon size="large">mdi-earth</v-icon>
+                                                    </strong>
+                                                    {{ connectionPublicIP || "0.0.0.0" }}
+                                                </a>
                                             </div>
-
-                                        </v-col>
-
-                                        <v-col style="align-content: space-around; font-size: 145% !important">
-
-                                            <v-btn style="min-width: 40px; height: 45px !important">
-                                                <v-icon style="font-size: 170% !important;" @click="getConnectionQrcode">mdi-qrcode</v-icon>
-                                            </v-btn>
-
-                                            <v-btn style="min-width: 40px; height: 45px !important">
-                                                <v-icon style="font-size: 170% !important;" @click="getConnectionPassword">mdi-safe</v-icon>
-                                            </v-btn>  
-                                        </v-col>
-
-                                    </v-row>
 
                                 </v-card-text>
                                 
-                                <v-card-actions class="pt-0 pb-0 mb-0 mt-0">
+                                <v-card-actions class="pt-0 pb-0 mt-0">
 
                                     <v-row>
 
-                                        <v-col cols="4">
-                                            <v-btn :block="true" @click="connectToWifi(wifiConnectionActive)">
+                                        <v-col cols="3">
+                                            <v-btn :block="true" @click="reconnectActiveWifi">
                                                 <v-icon size="small" class="mr-2">mdi-wifi-refresh</v-icon>
                                                 Reconnect
                                             </v-btn>
                                         </v-col>
                                         
-                                        <v-col cols="4">
+                                        <v-col cols="3">
                                             <v-btn :block="true" @click="disconnectFromWifi">
                                                 <v-icon size="small" class="mr-2">mdi-wifi-off</v-icon>
                                                 Disconnect
                                             </v-btn>
                                         </v-col>
 
-                                        <v-col cols="4">
+                                        <v-col cols="3">
                                             <v-btn :block="true" @click="setupCurrentWifi">
                                                 <v-icon size="small" class="mr-2">mdi-cogs</v-icon>
                                                 Settings
                                             </v-btn>
                                         </v-col>
                                     
+                                        <v-col cols="3">
+                                            <v-btn :block="true" @click="getConnectionQrcreds">
+                                                <v-icon class="mr-2">mdi-qrcode</v-icon>
+                                                Credentials
+                                            </v-btn>
+                                        </v-col>
+
                                     </v-row>
 
                                 </v-card-actions>
@@ -162,29 +177,135 @@
                             
                         </v-col>
 
-                        <v-col cols="12" md="12" class="mt-0 pt-2">
+
+
+                        <!-- SECSAO DE REDES WIFI -->
+                        <v-col cols="12" class="mt-0 pt-0 ">
 
                             <v-card class="network-list" outlined v-if="wifiNetworks.length > 0">
 
-                                <v-toolbar height="6" color="primary" title="User Profile"></v-toolbar>
+
+
+                                <!-- THIS COMPONENT SOMEHOW SUITS AS THE BORDER OF THE TABS DRWAWE -->
+                                <v-toolbar height="2" color="primary" title="User Profile"></v-toolbar>
+
+
 
                                 <v-row>
 
-                                    <v-col cols="2">
-                                        <v-tabs v-model="currentTab" color="primary" vertical>
-                                            <v-tab v-for="(tab, index) in tabs" :key="index" :value="tab.value" style="text-align: left !important; justify-content: left; font-size: x-small;" prepend-icon="mdi-account">
+
+
+
+
+                                    <v-col cols="2" class="pr-0">
+                                        
+                                        <!-- LATERAL TABS DRWAWER -->
+                                        <v-tabs color="primary" vertical>
+                                            <v-tab 
+                                                v-for="(tab, index) in tabs" 
+                                                :key="index" 
+                                                @click="currentTab = tab.value"
+                                                prepend-icon="mdi-account"
+                                                style="text-align: left !important; justify-content: left; font-size: x-small">
                                                 {{ tab.text }}
                                             </v-tab>
                                         </v-tabs>
+
                                     </v-col>
 
+
+
+
                                     <v-col cols="10" class="pl-0">
-                                        <v-card-text class="pl-0">
+
+
+
+
+
+
+                                        <!-- SECSAO DE LISTAGEM DE TODAS AS REDES WIFI ALCANCAVEIS  -->
+                                        <v-card-text class="pl-0 pt-0" v-show="currentTab === 'networks'">
                                             <v-list>    
                                                 
                                                 <v-list-item 
                                                     class="ma-2 mr-3 ml-3 mb-3 wifi-list-item"
+                                                    :style="network.known ? 'background: rgba(0, 0, 0, 0.2)' : ''"
                                                     v-for="(network, index) in wifiNetworks"
+                                                    :key="`${network.mac}-${index}`" 
+                                                    v-show="network.ssid">
+
+                                                    <v-row>
+
+                                                        <v-col cols="4" style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                                                            
+                                                            <v-icon size="small" class="mr-2" v-if="network.known">mdi-wifi-check</v-icon>
+                                                            <v-icon size="small" class="mr-2" v-else>mdi-wifi-strength-4</v-icon>
+                                                            
+                                                            <div 
+                                                                style="display: inline-block; margin-right: 10px;" 
+                                                                @click="cp(network.ssid)">
+                                                                {{ network.ssid }}
+                                                            </div>
+                                                            
+                                                            <v-progress-linear 
+                                                                height="10" 
+                                                                style="display: inline-block;"
+                                                                :value="network.quality"
+                                                                :color="getSignalColor(network.quality)" 
+                                                                class="mt-2"></v-progress-linear>
+
+                                                        </v-col>
+
+                                                        <v-col cols="8"
+                                                               style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap">
+                                                            
+                                                               <strong class="ml-2">Channel: </strong>
+                                                            {{ network.channel }}
+                                                            
+                                                            <strong class="ml-2">Frequency: </strong>
+                                                            {{ network.frequency }}
+
+                                                            <v-icon class="ml-2" style="font-size: smaller;">mdi-lock</v-icon>
+                                                            {{ network.security || '(Public)' }}
+                                                            
+                                                            <a @click="cp(network.mac)" style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                                                                <v-icon class="ml-2" style="font-size: smaller;">mdi-ethernet</v-icon>
+                                                                {{ network.mac }}
+                                                            </a>
+
+                                                        </v-col>
+                                                        
+                                                    </v-row>
+
+                                                    <v-list-item-action>
+                                                        <v-row>
+                                                            <v-col class="pr-0">
+                                                                <v-btn style="padding: 3px; min-width: 36px !important;" height="36" @click="connectToWifi(network)">
+                                                                    <v-icon size="small">mdi-connection</v-icon>
+                                                                </v-btn>
+                                                            </v-col>
+                                                            <v-col>
+                                                                <v-btn style="padding: 3px; min-width: 36px !important;" height="36" @click="viewWifiNetwork(network)">
+                                                                    <v-icon size="small">mdi-cogs</v-icon>
+                                                                </v-btn>
+                                                            </v-col>
+                                                        </v-row>
+                                                    </v-list-item-action>
+                                                </v-list-item>
+
+                                            </v-list>
+                                        </v-card-text>
+                                        <!------------------------------------------------------------->
+
+
+
+
+                                        <!-- SECSAO DE REDES WIFI CONHECIDAS APENAS  ------------------>
+                                        <v-card-text class="pl-0 pt-0" v-show="currentTab === 'knownWifis'">
+                                            <v-list>
+                                                <v-list-item 
+                                                    class="ma-2 mr-3 ml-3 mb-3 wifi-list-item"
+                                                    v-for="(network, index) in wifiNetworksKnown"
                                                     :key="`${network.mac}-${index}`" 
                                                     v-show="network.ssid">
 
@@ -202,7 +323,7 @@
                                                         </v-col>
 
                                                         <v-col cols="5"
-                                                                 style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap">
+                                                               style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap">
                                                             <strong class="ml-2">Channel: </strong>
                                                             {{ network.channel }}
                                                             <strong class="ml-2">Frequency: </strong>
@@ -228,15 +349,31 @@
                                                             </v-col>
                                                             <v-col>
                                                                 <v-btn style="padding: 3px; min-width: 36px !important;" height="36" @click="viewWifiNetwork(network)">
-                                                                    <v-icon size="small">mdi-cogs</v-icon>
+                                                                    <v-icon size="small">mdi-cogs</v-icon
                                                                 </v-btn>
                                                             </v-col>
                                                         </v-row>
                                                     </v-list-item-action>
                                                 </v-list-item>
-
-                                            </v-list>
+                                                
+                                            </v-list>    
                                         </v-card-text>
+                                        <!------------------------------------------------------------->
+
+
+
+
+                                        
+                                        <!-- SECSAO DE REDES WIFI CRIADAS (HOTSPOSSTS PESSOAIS) ------>
+                                        
+                                        <v-card-text class="pl-0 pt-0" v-show="currentTab === 'hotspots'">
+                                            MEUS HOTSPOTS
+                                        </v-card-text>
+                                        
+                                        <!------------------------------------------------------------->
+
+
+
                                     </v-col>
                                     
                                 </v-row>
@@ -259,8 +396,57 @@
                             </v-card>
 
                         </v-col>
+
+
+
+                        <!-- SECSAO DE REDES WIFI CONHECIDAS -->
+                        <v-col cols="12" class="mt-0 pt-2" v-if="currentTab === 'knownWifis'">
+                            corridad e ratos
+                        </v-col>
+
+                    
+                    </v-row>
+
+                </v-container>
+
+
+
+
+
+                
+                <!-- FULL PROGRESS LOADER CONTAINER -->
+                <v-container fluid style="height: 100vh; position: absolute; top: 1px; z-index: 999; background-color: rgba(0,0,0,0.3)" v-show="loading">
+                    <v-row align-content="center" class="fill-height" justify="center">
+                        <v-col class="text-subtitle-1 text-center" cols="12">
+                            <v-progress-circular :size="50" color="primary" indeterminate></v-progress-circular>
+                        </v-col>
                     </v-row>
                 </v-container>
+
+
+
+
+
+                <!-- Dialog de mostrar credenciais da rede -->
+                <div
+                    @keydown.esc="credentialsModalOpen = false"
+                    @click="credentialsModalOpen = false"
+                    style=" align-content: center; height: 100%; position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 999; background-color: rgba(0,0,0,0.3);"
+                    v-if="credentialsModalOpen">
+                    <v-card>
+                        <v-card-text style="text-align: center">
+                            
+
+                            <img @click="cp(wifiNetworkActive.password)" style="cursor: pointer;" :src="wifiNetworkActive.qrcode" height="300px"/>
+
+                        </v-card-text>
+
+                    </v-card>
+                </div>
+
+                
+
+
             </v-main>
         </v-app>
     </div>
@@ -271,7 +457,7 @@
     
     <script>
 
-        const { ipcRenderer, ipcMain } = require('electron');
+        const { ipcRenderer, ipcMain, clipboard } = require('electron');
 
         const env = process.env,
               nodeEnv = env.NODE_ENV || 'development';
@@ -287,13 +473,17 @@
             }),
 
             data: {
+                
                 tabs: [
-                    { text: 'Redes', value: 'Redes' },  
+                    { text: 'Redes', value: 'networks' },  
                     { text: 'Conexões', value: 'knownWifis' },
-                    { text: 'Configurações', value: 'settings' }
+                    { text: 'Hotspots', value: 'hotspots' }
                 ],
-                currentTab: 'bashboard',
-                wifiNetworkActive: {},
+
+                loading: false,
+                currentTab: 'networks',
+                credentialsModalOpen: false,
+                connectionPublicIP: null,
                 wifiConnectionActive: {},
                 wifiInterfaceActive: {},
                 wifiInterfaces: [],
@@ -305,21 +495,17 @@
             computed: {
 
                 wifiInterfaceActiveIcon () {
-                
-                    if (!this.wifiInterfaceActive.up) {
-                        return 'mdi-wifi-cancel';
-                    }
+                    if (!this.wifiInterfaceActive.up) { return 'mdi-wifi-cancel'; }
+                    if (this.wifiInterfaceActive.up && this.wifiInterfaceActive.ip) { return 'mdi-lan-connect'; }
+                    if (this.wifiInterfaceActive.up) { return 'mdi-wifi-check'; }
+                },
 
-                    if (this.wifiInterfaceActive.up && this.wifiInterfaceActive.ip) {
-                        return 'mdi-lan-connect';
-                    }
-
-                    if (this.wifiInterfaceActive.up) {
-                        return 'mdi-wifi-check';
-                    }
+                wifiNetworkActive () {
+                    return this.wifiNetworks.find(network => network.ssid === this.wifiConnectionActive.ssid);
                 }
+
             },
-            
+
             mounted () {
 
                 ipcRenderer.on('wifi-interfaces', (event, wifiInterfaces) => {
@@ -337,15 +523,38 @@
                 });
 
                 ipcRenderer.on('wifi-networks', (event, wifiNetworks) => {
-                    this.wifiNetworks = wifiNetworks.filter(network => !network.connected);
-                    this.wifiNetworkActive = wifiNetworks.find(network => network.connected);
+                    this.wifiNetworks = wifiNetworks;
                     console.log('this.wifiNetworks', this.wifiNetworks);
-                    console.log('this.wifiNetworkActive', this.wifiNetworkActive)
                 });
 
                 ipcRenderer.on('wifi-networks-known', (event, wifiNetworksKnown) => {
                     this.wifiNetworksKnown = wifiNetworksKnown;
                     console.log('this.wifiNetworksKnown', this.wifiNetworksKnown)
+                });
+
+                ipcRenderer.on('wifi-action-start', (event, action) => {
+                    this.loading = true;
+                });
+
+                ipcRenderer.on('wifi-action-finnish', (event, action) => {
+                    this.loading = false;
+                });
+
+                document.addEventListener('keydown', event => {
+
+                    if (this.credentialsModalOpen && event.key === 'Enter') {
+                        this.cp(this.wifiNetworkActive.password)
+                        this.credentialsModalOpen = false;
+                    }
+                    
+                    if (this.credentialsModalOpen && event.key === 'Escape') {
+                        this.credentialsModalOpen = false;
+                    }
+
+                    if (!this.credentialsModalOpen && event.key === 'Escape') {
+                        this.hideApp();
+                    }
+                
                 });
             },
 
@@ -355,17 +564,12 @@
                     ipcRenderer.send('wifi-action', 'load', this.wifiInterfaces.find(ifc => ifc.name === event))
                 }, 
 
-                getSignalColor(signal) {
-                    
-                    if (signal > 75) return 'green';
-                    if (signal > 50) return 'yellow';
-                    if (signal > 25) return 'orange';
-
-                    return 'red';
-                },
-
                 connectToWifi(network) {
                     ipcRenderer.send('wifi-action', 'connect', network);
+                },
+
+                reconnectActiveWifi() {
+                    ipcRenderer.send('wifi-action', 'connect', this.wifiNetworkActive)
                 },
 
                 disconnectFromWifi() {
@@ -376,15 +580,42 @@
                     ipcRenderer.send('wifi-action', 'setup', this.wifiConnectionActive);
                 },
 
-                getConnectionQrcode () {
-                    ipcRenderer.send('wifi-action', 'qrcode', this.wifiConnectionActive);
+                getConnectionQrcreds() {
+                    this.credentialsModalOpen = true;
                 },
 
-                getConnectionPassword () {
-                    ipcRenderer.send('wifi-action', 'password', this.wifiConnectionActive);
+                setDefaultInterface() {
+                    ipcRenderer.send('wifi-action', 'set-default-iface', this.wifiInterfaceActive);
+                },
+
+                hideApp () {
+                    ipcRenderer.send('app-action', 'hide');
+                },
+
+                cp(text) {
+                    clipboard.writeText(text);
+                    new Notification('Texto copiado para a área de trabalho!')
+                },
+
+                getSignalColor(signal) {
+
+                    if (signal > 75) return 'green';
+                    if (signal > 50) return 'yellow';
+                    if (signal > 25) return 'orange';
+
+                    return 'red';
+                }
+            },
+
+            watch: {
+
+                wifiConnectionActive (newVal, oldVal) {
+                    fetch('https://api.ipify.org?format=json')
+                        .then(response => response.json())
+                        .then(data => this.connectionPublicIP = data.ip)
+                        .catch(error => console.error(error));
                 }
             }
-
         });
         
     </script>

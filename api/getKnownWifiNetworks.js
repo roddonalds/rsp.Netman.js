@@ -43,6 +43,7 @@ function getNetworkPasswordLinuxSync(ssid) {
 
 // Obter as redes WiFi conhecidas e suas senhas de forma assíncrona com callback
 function getKnownNetworks(callback) {
+  
   const networksResult = shell.exec('nmcli -t -f NAME connection show', { silent: true }).stdout.trim();
   const networkLines = networksResult.split('\n');
 
@@ -87,8 +88,5 @@ function getKnownNetworks(callback) {
   // Start processing networks from index 0
   processNetworks(0);
 }
-
-// Exemplo de uso: callback para imprimir os resultados
-getKnownNetworks(console.log);
 
 module.exports = getKnownNetworks;

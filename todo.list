@@ -1,11 +1,18 @@
-qr code wifi
-ver senha wifi
+OK - autoreloader de wifiNetworks disposables
+OK - ajetar o height
+funcao interna de armazenagem de knownwifis ives de puxar da NetworkManager NMCLI
+OK - clipboard nas props de ip, mac e password
+OK - marcar conexao q for a ativa, na listagem (nao so as known)
+INDO - a porra do loaderr full
+botao de spoof
+
+OK - qr code wifi
+OK  - ver senha wifi
+
 INDO - wifiws salvos
-OK - ajeitar terminal ohmybash
 OK - autoreloader electron
 OK - offlinizar libs CDN
 
-fazer drawyer layout no index.html
 sulocao para gerencamento de outros tipos de rede
 
 
