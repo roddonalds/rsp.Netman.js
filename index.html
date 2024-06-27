@@ -541,7 +541,9 @@
                 });
 
                 document.addEventListener('keydown', event => {
-
+                    if (!this.credentialsModalOpen && event.key === 'Escape') {
+                        ipcRenderer.send('app-action', 'hide');
+                    }
                     if (this.credentialsModalOpen && event.key === 'Enter') {
                         this.cp(this.wifiNetworkActive.password)
                         this.credentialsModalOpen = false;
@@ -551,9 +553,7 @@
                         this.credentialsModalOpen = false;
                     }
 
-                    if (!this.credentialsModalOpen && event.key === 'Escape') {
-                        this.hideApp();
-                    }
+
                 
                 });
             },
@@ -586,10 +586,6 @@
 
                 setDefaultInterface() {
                     ipcRenderer.send('wifi-action', 'set-default-iface', this.wifiInterfaceActive);
-                },
-
-                hideApp () {
-                    ipcRenderer.send('app-action', 'hide');
                 },
 
                 cp(text) {
