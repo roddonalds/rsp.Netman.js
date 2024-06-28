@@ -1,5 +1,6 @@
 const QRCode = require('qrcode');
 const shell = require('shelljs');
+//const { shell } = require('electron');
 
 shell.config.execPath = '/usr/bin/node'; // Example path, adjust according to your installation
 
@@ -30,7 +31,7 @@ function getNetworkDetailsSync(ssid) {
   }
 }
 
-// Implementação para Linux usando nmcli via shelljs de forma síncrona
+// Implementação para Linux usando nmcli via shell de forma síncrona
 function getNetworkPasswordLinuxSync(ssid) {
   try {
     const result = shell.exec(`nmcli -s -g 802-11-wireless-security.psk connection show "${ssid}"`, { silent: true }).stdout.trim();

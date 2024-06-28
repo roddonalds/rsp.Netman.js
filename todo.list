@@ -3,15 +3,22 @@ OK - ajetar o height
 funcao interna de armazenagem de knownwifis ives de puxar da NetworkManager NMCLI
 OK - clipboard nas props de ip, mac e password
 OK - marcar conexao q for a ativa, na listagem (nao so as known)
-INDO - a porra do loaderr full
+INDO -  do loaderr full
 botao de spoof
-
+IMPEDIR ABRIR MAIS DE UMA INSTANCIA
+OK - ajustar config de icons para constar no hicolor em /usr/share/icons/hicolor/256x256/apps/rsp.*
 OK - qr code wifi
 OK  - ver senha wifi
-
-INDO - wifiws salvos
+setagem permanente de interface default pelo ip route default (neah?!)
+OK - wifiws salvos
 OK - autoreloader electron
 OK - offlinizar libs CDN
+
+IMPEDIR DUPLA INSTANCIA
+TIRAR SELECTABLE TEXT PELO CSS
+GRAVAR IMPLEMENTACAO DO CONFIG USER PARA WIFIS CONHECIDAS 
+    ...AO INVES DE PUXAR DOS DADOS DO NetworkManager CLI 
+    > e porque?
 
 sulocao para gerencamento de outros tipos de rede
 

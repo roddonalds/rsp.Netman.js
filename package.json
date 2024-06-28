@@ -1,35 +1,36 @@
 {
-    "name": "wifi-listing-electron",
+    "name": "rsp.Wifiman",
     "version": "1.0.0",
-    "description": "",
+    "license": "AGPL-3.0-only",
+    "author": "<ropsoft> zaffpontoquarenta@gmail.com",
+    "description": "A Wifi connections management application.",
+    "homepage": "https://github.com/ropsoft/rsp.redman",
     "main": "main.js",
     "scripts": {
-        "gitup": "git add . && git commit -m 'update' && git push",
-        "start": "NODE_ENV=production electron . --remote-allow-origins=*",
-        "start:dev": "NODE_ENV=development electron . --watch --remote-allow-origins=* ",
-        "dist": "electron-builder --linux deb --x64",
-        "install": "sudo apt remove rsp.redman -y --purge; sudo dpkg -i dist/rsp.Wifiman.0.0_amd64.deb || true",
+        "dev": "NODE_ENV=development electron . --remote-allow-origins=* --watch",
+        "start": "NODE_ENV=production electron . --remote-allow-origins=* --watch",
+        "dist": "NODE_ENV=production electron-builder --linux deb --x64",
+        "insts": "killall rsp.wifiman; sudo apt remove rsp.wifiman -y --purge; sudo dpkg -i dist/rsp.Wifiman_1.0.0_amd64.deb || true",
+        "post-install": "electron-builder install-app-deps",
+        "release": "npm run dist && npm run install && npm run postinstall",
+        "git:up": "git add . && git commit -m 'update' && git push",
         "test:getInterfaces": "node ./test/getInterfaces.js",
         "test:getKnownWifis": "node ./test/getKnownWifis.js"
     },
-
     "build": {
         "appId": "io.ropsoft.rsp.wifiman",
         "productName": "rsp.wifiman",
         "directories": {
-        "output": "dist"
+            "buildResources": "build",
+            "output": "dist"
         },
         "linux": {
-        "icon": "./icon.png",
-        "target": [
-            "deb"
-        ],
-        "category": "Settings"
+            "icon": "build/icons",
+            "target": ["deb"],
+            "category": "Settings"
         }
     },
-
     "dependencies": {
-        "electron": "^31.0.2",
         "electron-devtools-installer": "^3.2.0",
         "electron-prompt": "^1.7.0",
         "network": "^0.7.0",
@@ -41,6 +42,7 @@
         "wireless-tools": "^0.19.0"
     },
     "devDependencies": {
+        "electron": "^31.0.2",
         "@vue/devtools": "^6.0.0-beta.21",
         "electron-reload": "^2.0.0-alpha.1",
         "electron-reloader": "^1.2.3"

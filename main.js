@@ -1,14 +1,27 @@
-global.activeWifiInterface = null;
-global.isOnline = true;
+const { 
+    
+    app, 
+    Tray, 
+    Menu, 
+    ipcMain, 
+    session,
+    Notification,
+    BrowserWindow
 
-const { app, BrowserWindow, Tray, Menu, ipcMain, Notification } = require('electron');
+} = require('electron');
+
 const prompt = require('electron-prompt')
 const path = require('path');
-const shell = require('shelljs');
+const shelljs = require('shelljs');
 const wifi = require('node-wifi');
 
+shelljs.config.execPath = '/usr/bin/node';
+shelljs.exec('killall rsp.wifiman');
+
 const env = process.env,
-      nodeEnv = env.NODE_ENV || 'development';
+      nodeEnv = env.NODE_ENV;
+
+global.activeWifiInterface = null;
 
 let tray;
 let mainWindow;
@@ -19,7 +32,7 @@ let mainWindowSkel = {
     hidden: false,
     show: true,
     zoomFactor: 0.7,
-    icon: path.join(__dirname, 'icon.png')
+    icon: path.join(__dirname, 'build', 'icons', '256x256.png')
 };
 
 let mainWebOptionsSkel = {
@@ -27,10 +40,7 @@ let mainWebOptionsSkel = {
     contextIsolation: false
 }
 
-if (nodeEnv === 'development') {
-    mainWindowSkel.width = 970;
-    mainWindowSkel.height = 1000;
-}
+app.commandLine.appendSwitch('force_high_performance_gpu', true)
 
 app.setLoginItemSettings({
     openAtLogin: true    
@@ -46,9 +56,9 @@ app.on('ready', () => {
 
     mainWindow = new BrowserWindow({
         ...mainWindowSkel,
-        width: 880,
-        height: 600,
-        resizable: false,
+        width: 610,
+        height: 777,
+        resizable: nodeEnv === 'development' ? true : false,
         webPreferences: {
             ...mainWebOptionsSkel
         }
@@ -59,11 +69,6 @@ app.on('ready', () => {
 
     // Load the index.html of the app
     mainWindow.loadFile('index.html');
-
-    // Open devtools automatically
-    if(nodeEnv === 'development') {
-        mainWindow.webContents.openDevTools();
-    }
     
     mainWindow.on('close', (event) => {
         event.preventDefault();
@@ -72,11 +77,16 @@ app.on('ready', () => {
 
     mainWindow.webContents.on('did-finish-load', () => {
         loadStack()
+        createTray();
+        createMainMenu();
+        initWifiNetworksReloader();
     });
 
-    createTray();
-    initWifiNetworksReloader();
-
+    if (nodeEnv === 'development') {
+        session.defaultSession.loadExtension('/home/rsp/.config/google-chrome/Default/Extensions/nhdogjmejiglipccpnnnanhbledajbpd/6.6.3_0').then(() => {
+            mainWindow.webContents.openDevTools();
+        })
+    }
 });
 
 ipcMain.on('app-action', (event, action, payload) => {
@@ -214,7 +224,7 @@ function setupWifiConnection(network) {
     // For example, using shell commands or an Electron Wi-Fi library
     console.log('Opening settings for:', network.ssid);
 
-    shell.exec(`nm-connection-editor`, (code, stdout, stderr) => {
+    shelljs.exec(`nm-connection-editor`, (code, stdout, stderr) => {
 
         if (code !== 0) {
 
@@ -223,7 +233,7 @@ function setupWifiConnection(network) {
             new Notification({
                 title: 'Settings Error',
                 body: `Failed to open settings for ${network.ssid}.`,
-                icon: path.join(__dirname, 'icon.png')
+                icon: path.join(__dirname, 'build', 'icons', '256x256.png')
             }).show();
 
         } else {
@@ -233,7 +243,7 @@ function setupWifiConnection(network) {
             new Notification({
                 title: 'Wi-Fi Settings',
                 body: `Opened settings for ${network.ssid}.`,
-                icon: path.join(__dirname, 'icon.png')
+                icon: path.join(__dirname, 'build', 'icons', '256x256.png')
             }).show();
         }
     });
@@ -255,14 +265,14 @@ async function connectToWifi(network) {
     
     console.log('Password', password);
     
-    shell.exec(`nmcli device wifi connect '${network.ssid}' password '${password}'`, (code, stdout, stderr) => {
+    shelljs.exec(`nmcli device wifi connect '${network.ssid}' password '${password}'`, (code, stdout, stderr) => {
         if (code !== 0) {
             console.error('Error connecting to Wi-Fi:', stderr);
             // Notify the user of the error
             new Notification({
                 title: 'Connection Error',
                 body: `Failed to connect to ${network.ssid}. Check your password and try again.`,
-                icon: path.join(__dirname, 'icon.png')
+                icon: path.join(__dirname, 'build', 'icons', '256x256.png')
             }).show();
         } else {
             console.log('Connected successfully to:', network.ssid);
@@ -270,7 +280,7 @@ async function connectToWifi(network) {
             new Notification({
                 title: 'Wi-Fi Connected',
                 body: `Successfully connected to ${network.ssid}.`,
-                icon: path.join(__dirname, 'icon.png')
+                icon: path.join(__dirname, 'build', 'icons', '256x256.png')
             }).show();
         }
 
@@ -285,14 +295,14 @@ function disconnectFromWifi(network) {
     // For example, using shell commands or an Electron Wi-Fi library
     console.log(`Disconnecting ${network.iface} from:`, network.ssid);
 
-    shell.exec(`nmcli device disconnect '${network.iface}'`, (code, stdout, stderr) => {
+    shelljs.exec(`nmcli device disconnect '${network.iface}'`, (code, stdout, stderr) => {
         if (code !== 0) {
             console.error('Error disconnecting Wi-Fi:', stderr);
             // Notify the user of the error
             new Notification({
                 title: 'Disconnection Error',
                 body: `Failed to disconnect from ${network.ssid}.`,
-                icon: path.join(__dirname, 'icon.png')
+                icon: path.join(__dirname, 'build', 'icons', '256x256.png')
             }).show();
         } else {
             console.log('Disconnected successfully from:', network.ssid);
@@ -300,7 +310,7 @@ function disconnectFromWifi(network) {
             new Notification({
                 title: 'Wi-Fi Disconnected',
                 body: `Successfully disconnected from ${network.ssid}.`,
-                icon: path.join(__dirname, 'icon.png')
+                icon: path.join(__dirname, 'build', 'icons', '256x256.png')
             }).show();
         }
 
@@ -324,19 +334,22 @@ async function askWifiPassword () {
 
 function initWifiNetworksReloader () {
     
+    if (nodeEnv === 'development') {
+        return;
+    }
+
     setInterval(() => {
         loadKnownWifis(knownWifis => {
             loadWifiNetworks(knownWifis, () => {
                 console.log('Wifi disposable networks were loaded')       
             })
         })
-
-    }, 1000 *  10);
+    }, 1000 * 30); // lets increase the timeout of this cronjob which is the thing that updates the wifi networks list on the view, in order to avoid the app to be slow!!! :)
 }
 
 function createTray() {
     
-    tray = new Tray(path.join(__dirname, 'icon.png'));
+    tray = new Tray(path.join(__dirname, 'build', 'icons', 'tray.png'));
     
     const contextMenu = Menu.buildFromTemplate([
         { label: 'Show', click: () => { mainWindow.show(); } },
@@ -349,4 +362,43 @@ function createTray() {
     tray.on('click', () => {
         mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show();
     });
+}
+
+function createMainMenu () {
+
+    const menu = Menu.buildFromTemplate([
+        {
+            label: 'App',
+            submenu: [
+                { role: 'quit' }
+            ]
+        },
+        {
+            label: 'Settings',
+            submenu: [
+                { role: 'reload' }
+            ]
+        },
+        {
+            label: 'View',
+            submenu: [
+                { role: 'Less' }
+            ]
+        },
+        {
+            label: 'Help',
+            submenu: [
+                {
+                    label: 'About',
+                    click: () => {
+                        require('electron').shelljs.openExternal('https://ropsoft.cloud/rsp-os')
+                    }
+                }
+            ]
+        }
+    ]);
+
+    if (process.env.NODE_ENV !== 'development') {
+        Menu.setApplicationMenu(menu);
+    }
 }
